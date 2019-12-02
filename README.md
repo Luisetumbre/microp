@@ -17,6 +17,7 @@ TODO: Write usage instructions
 3. To stage changes before committing `git add`
 4. To commit changes `git commit`
 5. Subir los archivos `git push`
+6. Actualizar archivos `git pull`
 
 ## History
 TODO: Write history
