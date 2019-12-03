@@ -1,7 +1,7 @@
 # microp
 TODO: Write a project description
 ## Installation
-TODO: Describe the installation process
+TODO: Para descargar el proyecto: `git clone https://github.com/Luisetumbre/microp`
 ## Usage
 TODO: Write usage instructions
 ## Contributing
