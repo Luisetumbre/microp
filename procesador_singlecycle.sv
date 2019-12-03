@@ -4,12 +4,13 @@ parameter n=32;
 
 //Definicion de los puertos de la interfaz
 input CLK,RESET_N;
-input [31:0] idata; //Bus de direcciones
-input [31:0] ddata_r; //Bus de datos
+input [n-1:0] idata; //Instruccion de datos
+input [n-1:0] ddata_r; //Bus de datos
 
-output [n-1:0] iaddr, daddr;
-output  [31:0] ddata_w;
-output d_rw;
+output [n-1:0] iaddr, daddr; //siguiente posicion de memoria de la instruccion
+//daddr es posicion de memoria del dato
+output  [n-1:0] ddata_w; //bus de datos de escritura
+output d_rw; //lectura-escritura
 
 wire [31:0] Imm;
 wire [31:0] Imm_desplazado;
