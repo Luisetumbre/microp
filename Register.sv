@@ -1,10 +1,10 @@
-module Register (clk, reset, RegWrite, RegRead_1, RegRead_2, w_reg, w_data, r_data1,r_data2);
+module Register (CLK, RESET_N, RegWrite, RegRead_1, RegRead_2, w_reg, w_data, r_data1,r_data2);
 	
 	//parameter nreg=32;
 	//parameter width= 32;
 	//parameter size= clog2(width);
 		
-	input clk, reset, RegWrite;
+	input CLK, RESET_N, RegWrite;
 	input [4:0] RegRead_1, RegRead_2, w_reg; //[size-1:0]
 	input [31:0]  w_data;
 	output reg  [31:0] r_data1, r_data2; //[width-1:0]
@@ -15,7 +15,7 @@ module Register (clk, reset, RegWrite, RegRead_1, RegRead_2, w_reg, w_data, r_da
 	
 
 
-always @(posedge clk) 
+always @(posedge CLK) 
  begin
 	  
 	if (RegWrite) 
