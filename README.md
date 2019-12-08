@@ -22,6 +22,6 @@ TODO: Write usage instructions
 ## History
 TODO: Write history
 ## Credits
-TODO: Write credits
+TODO: Agradecimientos al David Muñoz
 ## License
-TODO: Write license
+TODO: Creative Commons
