@@ -64,7 +64,70 @@ task automatic separaBus(input [N-1] instruccion); //variables dinamicas con aut
   
 endtask : separaBus
 
-////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+class monitor;
+virtual Interfaz.dut_p vInter; 
+mailbox mb;
+function new(virtual Interfaz.dut_p vInter,mailbox mb);
+  //getting the interface
+  this.vInter = vInter;
+  //getting the mailbox handles from  environment
+  this.mb = mb;
+endfunction
+
+//Samples the interface signal and send the sample packet to scoreboard
+  task main;
+    forever begin
+      transaction trans;
+      trans = new();
+      @(posedge vInter.clk);
+      wait(vif.valid);
+      trans.a   = vInter.a;
+      trans.b   = vInter.b;
+      @(posedge vInter.clk);
+      trans.c   = vInter.c;
+      @(posedge vInter.clk);
+      mb.put(trans);
+      trans.display("[ Monitor ]");
+    end
+  endtask
+
+endclass : monitor
+
+////////////////////////////////////////////////////////////////////////
+
+class Scoreboard; //Scoreboard receive's the sampled packet from monitor,
+  //if the transaction type is "read", compares the read data with the local memory data
+  //if the transaction type is "write", local memory will be written with the wdata
+//creating mailbox handle
+  mailbox mb;
+   
+  //used to count the number of transactions
+  int no_transactions;
+   
+  //constructor
+  function new(mailbox mb);
+    //getting the mailbox handles from  environment
+    this.mb = mb;
+  endfunction
+   
+  //Compares the Actual result with the expected result
+  task main;
+    transaction trans;
+    forever begin
+      mb.get(trans);
+        if((trans.a+trans.b) == trans.c)
+          $display("Result is as Expected");
+        else
+          $error("Wrong Result.\n\tExpeced: %0d Actual: %0d",(trans.a+trans.b),trans.c);
+        no_transactions++;
+      trans.display("[ Scoreboard ]");
+    end
+  endtask
+
+endclass : Scoreboard
+
+////////////////////////////////////////////////////////////////////////
 
 module testBench();
   bit clk;
