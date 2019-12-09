@@ -69,12 +69,14 @@ program estimulos ();
 endprogram
 ////////////////////////////////////////////////////////////////////////
 
-class Scoreboard; //Scoreboard receive's the sampled packet from monitor,
+class Scoreboard; //Scoreboard receive's the sampled packet from monitor
+  parameter N=32;
   //used to count the number of transactions
   int no_transactions;
+  reg [N-1:0] target, salida_obtenida;
    
   //constructor
-  function new();
+  function new(); //como es el constructor?, instanciando interfaz y monitor?
   endfunction
    
   //Compares the Actual result with the expected result
