@@ -1,5 +1,5 @@
 module procesador_singlecycle (CLK,RESET_N,idata,ddata_r,iaddr,daddr,ddata_w,d_rw);
-
+//comentario
 parameter n=32;
 
 //Definicion de los puertos de la interfaz
