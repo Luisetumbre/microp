@@ -40,6 +40,13 @@ clocking cb_tb @(posedge reloj);
     input busdata_w;
     input rw;
   endclocking
+  
+  clocking monitor@(posedge reloj);
+	default input #1ns output #1ns;
+		input iaddr;
+		input idata;
+ endclocking
+  
   // from tb, input data output enable
   modport tb_p (clocking cb_tb);
   //from dut, output data input enable
