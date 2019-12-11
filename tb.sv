@@ -40,7 +40,7 @@ clocking cb_tb @(posedge reloj);
     input busdata_w;
     input rw;
   endclocking
-  
+  //algo
   clocking monitor@(posedge reloj);
 	default input #1ns output #1ns;
 		input iaddr;
