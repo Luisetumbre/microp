@@ -18,39 +18,41 @@ endclass
 interface Interfaz (
   input  bit        reloj  , 
   input   bit      rst);
-  logic [N-1:0] insdat, busdata_r, next_mem, pos_mem, busdata_w;
+  logic [N-1:0] idata, iaddr, daddr, ddata_r, ddata_w;
   logic rw;
 
 clocking cb_dut @(posedge reloj);
-  default input #2ns output #2ns;
-    input insdat;
-    input busdata_r;
-    output next_mem;
-    output pos_mem;
-    output busdata_w;
+  default input #1ns output #1ns;
+    input idata;
+    input ddata_r;
+    output iaddr;
+    output ddata_w;
+    output ddadr;
     output rw;
   endclocking
 
 clocking cb_tb @(posedge reloj);
-  default input #2ns output #2ns;
-    output insdat;
-    output busdata_r;
-    input next_mem;
-    input pos_mem;
-    input busdata_w;
+  default input #1ns output #1ns;
+    output idata;
+    output ddata_r;
+    input iaddr;
+    input ddata_w;
+    input ddadr;
     input rw;
   endclocking
-  //algo
-  clocking monitor@(posedge reloj);
+  
+ clocking cb_monitor@(posedge reloj);
 	default input #1ns output #1ns;
 		input iaddr;
 		input idata;
  endclocking
-  
+ 
   // from tb, input data output enable
   modport tb_p (clocking cb_tb);
   //from dut, output data input enable
   modport dut_p (clocking cb_dut);
+  //monitor
+  modport monitor (clocking cb_monitor);
 endinterface
 
 
