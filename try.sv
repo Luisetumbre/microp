@@ -80,7 +80,7 @@ endfunction : getInstType
 reg [31:0] instruccion = 32'h00050513;
 reg [6:0] opcode;
 reg [1:0] tipoInstruccion;
-reg [9:0] groupR;
+reg [9:0] group;
 reg [6:0] funct7;
 reg [2:0] funct3;
 string format;
@@ -113,11 +113,12 @@ initial
 	funct3 = getFunct3(instruccion);
 	//Ahora nos separamos por formatos
 	//R-format
+	
 	if(format=="R-format")
 	begin
 		funct7 = getFunct7(instruccion);
-		groupR = {funct7,funct3}; //agrupamos funct7 y funct3 para diferenciar ahora el tipo de instruccion que tenemos
-		case (groupR)
+		group = {funct7,funct3}; //agrupamos funct7 y funct3 para diferenciar ahora el tipo de instruccion que tenemos
+		case (group)
 		10'h000:
 		mnemonico = "add";
 		10'h100:
@@ -134,8 +135,47 @@ initial
 		mnemonico = "and";
 		endcase
 	end
+	
 	else if(format=="I-format")
-		
+	begin
+		group = {funct3,opcode}; //agrupamos funct3 con opcode para diferenciar el tipo de instruccion como antes
+		case (group)
+		10'h013:
+		mnemonico = "addi";
+		10'h113:
+		mnemonico = "slti";
+		10'h193:
+		mnemonico = "sltiu";
+		10'h213:
+		mnemonico = "xori";
+		10'h313:
+		mnemonico = "ori";
+		10'h393: 
+		mnemonico = "andi";
+		10'h103:
+		mnemonico = "lw";
+		endcase
+	end
+	
+	else if(format=="S-format")
+	begin
+		group = {funct3,opcode};
+		case (group)
+		10'h123:
+		mnemonico = "sw";
+		endcase
+	end
+	
+	else if(format == "SB-format")//SB-format
+	begin
+		group = {funct3,opcode};
+		case (group)
+		10'h063:
+		mnemonico = "beq";
+		10'h0E3:
+		mnemonico = "bne";
+		endcase
+	end
 	
 	end
 endmodule
