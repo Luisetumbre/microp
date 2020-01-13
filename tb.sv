@@ -160,4 +160,8 @@ initial begin
 end  
 endmodule
 
+function void ();
+  
+endfunction : 
+
 
