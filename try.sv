@@ -80,6 +80,11 @@ endfunction : getInstType
 reg [31:0] instruccion = 32'h00050513;
 reg [6:0] opcode;
 reg [1:0] tipoInstruccion;
+reg [9:0] groupR;
+reg [6:0] funct7;
+reg [2:0] funct3;
+string format;
+string mnemonico;
 
 initial 
 	begin
@@ -89,4 +94,48 @@ initial
 		$display("Formato de Instruccion =%d",tipoInstruccion);
 	end
 
+initial
+	begin
+	//primero sacamos el opcode y el formato de la instruccion
+	opcode = getOpcode(instruccion);
+	tipoInstruccion = getInstType(opcode);
+	case (tipoInstruccion)
+		2'b00:
+		format = "R-format";
+		2'b01:
+		format = "I-format";
+		2'b10:
+		format = "S-format";
+		2'b11:
+		format = "SB-format";
+	endcase
+	$display("formato = %d",format);
+	funct3 = getFunct3(instruccion);
+	//Ahora nos separamos por formatos
+	//R-format
+	if(format=="R-format")
+	begin
+		funct7 = getFunct7(instruccion);
+		groupR = {funct7,funct3}; //agrupamos funct7 y funct3 para diferenciar ahora el tipo de instruccion que tenemos
+		case (groupR)
+		10'h000:
+		mnemonico = "add";
+		10'h100:
+		mnemonico = "sub";
+		10'h002:
+		mnemonico = "slt";
+		10'h003:
+		mnemonico = "sltu";
+		10'h004:
+		mnemonico = "xor";
+		10'h006: 
+		mnemonico = "or";
+		10'h007:
+		mnemonico = "and";
+		endcase
+	end
+	else if(format=="I-format")
+		
+	
+	end
 endmodule
