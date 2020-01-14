@@ -133,6 +133,8 @@ initial
 		mnemonico = "or";
 		10'h007:
 		mnemonico = "and";
+		default:
+		mnemonico = "unknown";
 		endcase
 	end
 	
@@ -154,6 +156,8 @@ initial
 		mnemonico = "andi";
 		10'h103:
 		mnemonico = "lw";
+		default:
+		mnemonico = "unknown";
 		endcase
 	end
 	
@@ -163,6 +167,8 @@ initial
 		case (group)
 		10'h123:
 		mnemonico = "sw";
+		default:
+		mnemonico = "unknown";
 		endcase
 	end
 	
@@ -174,6 +180,8 @@ initial
 		mnemonico = "beq";
 		10'h0E3:
 		mnemonico = "bne";
+		default:
+		mnemonico = "unknown";
 		endcase
 	end
 	

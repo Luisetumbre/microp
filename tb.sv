@@ -4,7 +4,8 @@ class Bus;
   randc logic [N-1:0] inst_r;
   randc logic [N-1:0] inst_s;
   randc logic [N-1:0] inst_b;
-  constraint op_code_I {inst_i[6:0]==7'b0010011;};
+  constraint op_code_I {inst_i[6:0]==7'b0010011;}; 
+  constraint op_code_I2{inst_i[6:0]==7'b0000011;}; //activar y desactivar con constraint_mode
   constraint op_code_R {inst_r[6:0]==7'b0110011;};
   constraint op_code_S {inst_s[6:0]==7'b0100011;};
   constraint op_code_B {inst_b[6:0]==7'b1100011;};
