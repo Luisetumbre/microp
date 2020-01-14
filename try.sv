@@ -240,6 +240,29 @@ input [31:0] instruction;
 	rd = getRd(instruction);
 	end
 	//I-format
+	"addi":
+	begin
+	imm = getImm(instruction);
+	rd = getRd(instruction);
+	end
+	"slti":
+	begin
+	imm = getImm(instruction);
+	rd = getRd(instruction);
+	end
+	"sltiu":
+	begin
+	imm = getImm(instruction);
+	rd = getRd(instruction);
+	end
+	"xori":
+	imm = getImm(instruction);
+	"ori":
+	imm = getImm(instruction);
+	"andi":
+	imm = getImm(instruction);
+	"lw": //???????????????????????????????
+
 	//S-format
 	"sw":
 	rs1 = getRs1(instruction);
