@@ -77,25 +77,31 @@ function bit [1:0] getInstType;
 endfunction : getInstType
 
 //probamos la funcion
-reg [31:0] instruccion = 32'h00050513;
+reg [31:0] instruccion = 32'h01DF0F33;
 reg [6:0] opcode;
 reg [1:0] tipoInstruccion;
 reg [9:0] group;
 reg [6:0] funct7;
 reg [2:0] funct3;
 string format;
-string mnemonico;
+string nombre;
 
 initial 
 	begin
 		opcode = getOpcode(instruccion);
-		$display("OpCode =%d",opcode);
+		$display("OpCode =%b",opcode);
 		tipoInstruccion = getInstType(opcode);
-		$display("Formato de Instruccion =%d",tipoInstruccion);
+		nombre = mnemonico(instruccion);
+		newInst(instruccion);
 	end
 
-initial
-	begin
+function string mnemonico;
+input [31:0] instruction;
+	reg [6:0] opcode;
+	reg [1:0] tipoInstruccion;
+	reg [9:0] group;
+	reg [6:0] funct7;
+	reg [2:0] funct3;
 	//primero sacamos el opcode y el formato de la instruccion
 	opcode = getOpcode(instruccion);
 	tipoInstruccion = getInstType(opcode);
@@ -184,6 +190,66 @@ initial
 		mnemonico = "unknown";
 		endcase
 	end
+	$display("Instruccion:%d",mnemonico);
+	endfunction: mnemonico
 	
+	
+	reg [4:0] rd;
+	
+	task newInst;
+	input [31:0] instruction;
+	reg [4:0] rs1, rs2;
+	string mnem;
+	mnem = mnemonico(instruction);
+	rs1 = getRs1(instruction);
+	case (mnem)
+	//R-format
+	"add":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
 	end
+	"sub":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	"slt":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	"sltu":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	"xor":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	"or":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	"and":
+	begin
+	rs2 = getRs2(instruction);
+	rd = getRd(instruction);
+	end
+	//I-format
+	//S-format
+	"sw":
+	rs1 = getRs1(instruction);
+	
+	//SB-format
+	endcase
+	$display("rd=%d",rd);
+	$display("rs1=%d",rs1);
+	$display("rs2=%d",rs2);
+	endtask: newInst
+	
+	
 endmodule
