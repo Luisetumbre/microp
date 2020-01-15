@@ -195,7 +195,7 @@ input [31:0] instruction;
 	
 	
 	reg [4:0] rd;
-	
+	reg [11:0] imm;
 	task newInst;
 	input [31:0] instruction;
 	reg [4:0] rs1, rs2;
@@ -242,26 +242,26 @@ input [31:0] instruction;
 	//I-format
 	"addi":
 	begin
-	imm = getImm(instruction);
+	imm = getImm(instruction, getInstType(instruction));
 	rd = getRd(instruction);
 	end
 	"slti":
 	begin
-	imm = getImm(instruction);
+	imm = getImm(instruction, getInstType(instruction));
 	rd = getRd(instruction);
 	end
 	"sltiu":
 	begin
-	imm = getImm(instruction);
+	imm = getImm(instruction, getInstType(instruction));
 	rd = getRd(instruction);
 	end
 	"xori":
-	imm = getImm(instruction);
+	imm = getImm(instruction, getInstType(instruction));
 	"ori":
-	imm = getImm(instruction);
+	imm = getImm(instruction, getInstType(instruction));
 	"andi":
-	imm = getImm(instruction);
-	"lw": //???????????????????????????????
+	imm = getImm(instruction, getInstType(instruction));
+	//"lw": //???????????????????????????????
 
 	//S-format
 	"sw":
