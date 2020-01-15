@@ -1,4 +1,4 @@
-class Bus;
+class Rands;
   parameter N=32;
   randc logic [N-1:0] inst_i;
   randc logic [N-1:0] inst_r;
@@ -54,20 +54,12 @@ clocking monit @(posedge reloj);
     input ddadr;
     input rw;
   endclocking
-  
- clocking cb_monitor@(posedge reloj);
-	default input #1ns output #1ns;
-		input iaddr;
-		input idata;
- endclocking
  
-  // from tb, input data output enable
-  modport tb_p (clocking cb_tb);
   //from dut, output data input enable
   modport dut_p (clocking cb_dut);
-  //monitor
-  modport moni (clocking cb_monitor);
-  //monitor weno
+  // from tb, input data output enable
+  modport tb_p (clocking cb_tb);
+  //monitor 
   modport monitor (clocking monit);
   
 endinterface
@@ -404,21 +396,34 @@ program estimulos
 	);
 
 covergroup valores;  //Definicion del covergroup   
-  valores_ALUOp:coverpoint  monitorizar.md.
-  R_W:coverpoint  monitorizar.md.rw;
+  valores_ALUOp:coverpoint  monitor.monit.idata[6:0]
+  {
+  bins R = {7'h33}
+  bins I = {7'h3,7'h13} //??????????? no se si se puede escribir asi
+  bins S = {7'h23}
+  bins B = {7'h63}
+  }
+  fun3:coverpoint  monitor.monit.idata[]
+  {
+
+  }
+  fun7:coverpoint {monitor.monit.idata[]}
+  {
+
+  }
   inst_code:coverpoint monitorizar.codigo_instruccion;
-  fuente1: coverpoint {monitorizar.codigo_instruccion[19:15]}
-  fuente2: coverpoint {monitorizar.codigo_instruccion[24:20]}
-  destino: coverpoint {monitorizar.codigo_instruccion[11:7]}
+  fuente1: coverpoint {monitor.monit.idata[19:15]}
+  fuente2: coverpoint {monitor.monit.idata[24:20]}
+  destino: coverpoint {monitor.monit.idata[11:7]}
   //inmediatos: coverpoint
 endgroup; 
 
 Scoreboard sb;
-Bus busInst;
+Rands randsInst;
 
 initial
 begin
-	busInst = new;
+	randsInst = new;
 	sb = new(monitor);
 end
 
@@ -430,26 +435,32 @@ endprogram
 
 
 
-module top_duv();
-  bit clk;
-  bit rst_n;
+module top_duv(Interfaz.dut_p bus);
+ 	bit clk;
+ 	bit rst_n;
 
-  Interfaz intf1(clk, rst_n);
+	Interfaz intf1(clk, rst_n);
 
-  procesador_singlecycle DUT (intf1.dut_p);
+	procesador_singlecycle DUT (
+  		.CLK(bus.reloj),
+  		.RESET_N(bus.rst),
+  		.idata(bus.idata),
+  		.ddata_r(bus.ddata_r),
+  		.iaddr(bus.iaddr), 
+  		.daddr(bus.ddadr),
+  		.ddata_w(bus.ddata_w),
+  		.d_rw(bus.d_rw) 
+  		);
 
-  //reloj
-  //always #10 clk = ~clk;
-
-endmodule : testBench
+endmodule : top_duv
 
 ////////////////////////////////////////////////////////////////////////
 
-module tb();
-// constants                                           
+module singlecycle_tb();                                         
 // general purpose registers
 reg CLK;
 reg RESET;
+
 //interfaz
 Interfaz interfaz(.reloj(CLK),.rst(RESET));
 
@@ -476,7 +487,7 @@ begin
 end 
   
 initial begin
-  $dumpfile("multipli_parallel.vcd");
-  $dumpvars(1,prueba_multiplicador_2.duv.multiplicador_duv.S);  
+  $dumpfile("singlecycle_test.vcd");
+  $dumpvars(0,singlecycle_tb);  
 end  
 endmodule
