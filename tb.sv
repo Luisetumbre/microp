@@ -395,27 +395,72 @@ program estimulos
 	Interfaz.monitor monitor
 	);
 
-covergroup valores;  //Definicion del covergroup   
-  valores_ALUOp:coverpoint  monitor.monit.idata[6:0]
-  {
-  bins R = {7'h33}
-  bins I = {7'h3,7'h13} //??????????? no se si se puede escribir asi
-  bins S = {7'h23}
-  bins B = {7'h63}
-  }
-  fun3:coverpoint  monitor.monit.idata[]
-  {
+covergroup Rcover;
+	AluOP:coverpoint monitor.monit.idata[6:0] {
+	bins OpR = {51};//7'h33
+	}
+	fun7:coverpoint monitor.monit.idata[31:25]{
+	bins funct7[2] = {0,32}; //2 bins, b[0]=0 and b[1]=32
+  	}
+  	fun3:coverpoint  monitor.monit.idata[14:12]
+ 	{
+  	bins funct3 [8] {[0:7]};
+ 	}
+ 	fuente1: coverpoint monitor.monit.idata[19:15];
+  	fuente2: coverpoint monitor.monit.idata[24:20];
+  	destino: coverpoint monitor.monit.idata[11:7];
+endgroup
 
-  }
-  fun7:coverpoint {monitor.monit.idata[]}
-  {
+covergroup Icover;
+	AluOp:coverpoint monitor.monit.idata[6:0]{
+	bins OpI [2]= {3,19}; //2 bins, b[0]=3 and b[1]=19
+	}
+	fun3:coverpoint  monitor.monit.idata[14:12]
+ 	{
+  	bins funct3 [8] {[0:7]};
+ 	}
+ 	fuente1: coverpoint monitor.monit.idata[19:15];
+  	destino: coverpoint monitor.monit.idata[11:7];
+  	inmediatos:coverpoint {monitor.monit.idata[31:20]}{
+  	bins positivo = {1:8191};
+  	bins negativo = {8192:16383};
+  	}
 
-  }
-  inst_code:coverpoint monitorizar.codigo_instruccion;
-  fuente1: coverpoint {monitor.monit.idata[19:15]}
-  fuente2: coverpoint {monitor.monit.idata[24:20]}
-  destino: coverpoint {monitor.monit.idata[11:7]}
-  //inmediatos: coverpoint
+endgroup
+
+covergroup Scover();
+   	AluOp:coverpoint monitor.monit.idata[6:0]{
+	bins OpS = {35}; //7'h23
+	}
+	fun3:coverpoint  monitor.monit.idata[14:12]
+ 	{
+  	bins funct3 [8] {[0:7]};
+ 	}
+ 	fuente1: coverpoint monitor.monit.idata[19:15];
+  	fuente2: coverpoint monitor.monit.idata[24:20];
+  	inmediatos:coverpoint {monitor.monit.idata[31:25],monitor.monit.idata[11,7]}{
+  	bins positivo = {1:8191};
+  	bins negativo = {8192:16383};
+  	}
+
+endgroup
+
+covergroup Bcover;  //Definicion del covergroup   
+ 	AluOp:coverpoint  monitor.monit.idata[6:0]
+  	{
+  	bins OpB = {99};//7'h63
+  	}
+ 	fun3:coverpoint  monitor.monit.idata[14:12]
+  	{
+ 	bins funct3 [8] {[0:7]};
+ 	}
+ 	inst_code:coverpoint monitorizar.codigo_instruccion;
+ 	fuente1: coverpoint monitor.monit.idata[19:15];
+ 	fuente2: coverpoint monitor.monit.idata[24:20];
+ 	inmediatos:coverpoint {monitor.monit.idata[31],monitor.monit.idata[7],monitor.monit.idata[30:25],monitor.monit.idata[11,8]}{
+  	bins positivo = {1:8191};
+  	bins negativo = {8192:16383};
+  	}
 endgroup; 
 
 Scoreboard sb;
