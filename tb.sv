@@ -1,17 +1,14 @@
 class Rands;
   parameter N=32;
-  randc logic [N-1:0] inst_i;
-  randc logic [N-1:0] inst_r;
-  randc logic [N-1:0] inst_s;
-  randc logic [N-1:0] inst_b;
+  randc logic [N-1:0] inst
   
-  constraint op_code_I {inst_i[6:0] dist {7'b0010011:=6, 7'b0000011:=1};}; 
-  constraint funct_7{inst_r[31:25] dist{7'h0:=6, 7'h20:=2};};
-  constraint funct_3_S{inst_s[14:12] == 3'b010;};
-  constraint funct_3_B{inst_b[14:12] < 3'b10;};
-  constraint op_code_R {inst_r[6:0]==7'b0110011;};
-  constraint op_code_S {inst_s[6:0]==7'b0100011;};
-  constraint op_code_B {inst_b[6:0]==7'b1100011;};
+  constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};}; 
+  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=2};};
+  constraint funct_3_S{inst[14:12] == 3'b010;};
+  constraint funct_3_B{inst[14:12] < 3'b10;};
+  constraint op_code_R {inst[6:0]==7'b0110011;};
+  constraint op_code_S {inst[6:0]==7'b0100011;};
+  constraint op_code_B {inst[6:0]==7'b1100011;};
 endclass
 
 `timescale 1ns/1ps
@@ -430,7 +427,7 @@ covergroup Icover;
 
 endgroup
 
-covergroup Scover();
+covergroup Scover;
    	AluOp:coverpoint monitor.monit.idata[6:0]{
 	bins OpS = {35}; //7'h23
 	}
@@ -463,14 +460,44 @@ covergroup Bcover;  //Definicion del covergroup
   	}
 endgroup; 
 
+//Declaración Scoreboard
 Scoreboard sb;
+//Declaracion aleatorios
 Rands randsInst;
+//Declaracion covergroups
+Rcover rcov;
+Icover icov;
+Scover scov;
+Bcover bcov;
+
 
 initial
 begin
-	randsInst = new;
-	sb = new(monitor);
+	randsInst = new; //creamos el objeto de los aleatorios
+	sb = new(monitor); //creamos el scoreboard
+	rcov = new; //creamos el covergroup de las instrucciones R
+	while (rcov.get_coverage()<100)
+	randsInst.op_code_R.constraint_mode(1);
+	randsInst.funct_7.constraint_mode(1);
+	randsInst.op_code_I.constraint_mode(0);
+	randsInst.op_code_S.constraint_mode(0);
+	randsInst.op_code_B.constraint_mode(0);
+	randsInst.funct_3_S.constraint_mode(0);
+	randsInst.funct_3_B.constraint_mode(0);
+	$display("Probamos instruccion R");
+	assert (randsInst.randomize()) else    $fatal("Fallo en la aleatorizacion");
+	
 end
+
+
+
+  //constraint op_code_I {inst_i[6:0] dist {7'b0010011:=6, 7'b0000011:=1};}; 
+  //constraint funct_7{inst_r[31:25] dist{7'h0:=6, 7'h20:=2};};
+  //constraint funct_3_S{inst_s[14:12] == 3'b010;};
+  //constraint funct_3_B{inst_b[14:12] < 3'b10;};
+  //constraint op_code_R {inst_r[6:0]==7'b0110011;};
+  //constraint op_code_S {inst_s[6:0]==7'b0100011;};
+  //constraint op_code_B {inst_b[6:0]==7'b1100011;};
 
 
 endprogram
