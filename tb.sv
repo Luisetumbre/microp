@@ -507,7 +507,7 @@ endprogram
 
 
 
-module top_duv(Interfaz.dut_p bus);
+module top_duv(Interfaz.duv bus);
  	bit clk;
  	bit rst_n;
 
