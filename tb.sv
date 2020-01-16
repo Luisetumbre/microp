@@ -22,7 +22,7 @@ endclass
 interface Interfaz (
   input  bit        reloj  , 
   input   bit      rst);
-  logic [N-1:0] idata, iaddr, daddr, ddata_r, ddata_w;
+  logic [31:0] idata, iaddr, ddadr, ddata_r, ddata_w;
   logic rw;
 
 clocking cb_dut @(posedge reloj);
@@ -61,6 +61,9 @@ clocking monit @(posedge reloj);
   modport tb_p (clocking cb_tb);
   //monitor 
   modport monitor (clocking monit);
+
+  //hacer modport para el dut!
+
   
 endinterface
 
@@ -165,12 +168,13 @@ endfunction : getInstType
 
 
 function string mnemonico;
-input [31:0] instruction;
+input [31:0] instruccion;
 	reg [6:0] opcode;
 	reg [1:0] tipoInstruccion;
 	reg [9:0] group;
 	reg [6:0] funct7;
 	reg [2:0] funct3;
+	string format;
 	//primero sacamos el opcode y el formato de la instruccion
 	opcode = getOpcode(instruccion);
 	tipoInstruccion = getInstType(opcode);
@@ -402,9 +406,8 @@ covergroup Rcover;
 	fun7:coverpoint monitor.monit.idata[31:25]{
 	bins funct7[2] = {0,32}; //2 bins, b[0]=0 and b[1]=32
   	}
-  	fun3:coverpoint  monitor.monit.idata[14:12]
- 	{
-  	bins funct3 [8] {[0:7]};
+  	fun3:coverpoint  monitor.monit.idata[14:12]{
+  	bins funct3 [8] = {[0:7]};
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	fuente2: coverpoint monitor.monit.idata[24:20];
@@ -415,9 +418,8 @@ covergroup Icover;
 	AluOp:coverpoint monitor.monit.idata[6:0]{
 	bins OpI [2]= {3,19}; //2 bins, b[0]=3 and b[1]=19
 	}
-	fun3:coverpoint  monitor.monit.idata[14:12]
- 	{
-  	bins funct3 [8] {[0:7]};
+	fun3:coverpoint  monitor.monit.idata[14:12]{
+  	bins funct3 [8] = {[0:7]};
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	destino: coverpoint monitor.monit.idata[11:7];
@@ -432,9 +434,8 @@ covergroup Scover();
    	AluOp:coverpoint monitor.monit.idata[6:0]{
 	bins OpS = {35}; //7'h23
 	}
-	fun3:coverpoint  monitor.monit.idata[14:12]
- 	{
-  	bins funct3 [8] {[0:7]};
+	fun3:coverpoint  monitor.monit.idata[14:12]{
+  	bins funct3 [8] = {[0:7]};
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	fuente2: coverpoint monitor.monit.idata[24:20];
@@ -452,9 +453,8 @@ covergroup Bcover;  //Definicion del covergroup
   	}
  	fun3:coverpoint  monitor.monit.idata[14:12]
   	{
- 	bins funct3 [8] {[0:7]};
+ 	bins funct3 [8] = {[0:7]};
  	}
- 	inst_code:coverpoint monitorizar.codigo_instruccion;
  	fuente1: coverpoint monitor.monit.idata[19:15];
  	fuente2: coverpoint monitor.monit.idata[24:20];
  	inmediatos:coverpoint {monitor.monit.idata[31],monitor.monit.idata[7],monitor.monit.idata[30:25],monitor.monit.idata[11,8]}{
@@ -494,7 +494,7 @@ module top_duv(Interfaz.dut_p bus);
   		.iaddr(bus.iaddr), 
   		.daddr(bus.ddadr),
   		.ddata_w(bus.ddata_w),
-  		.d_rw(bus.d_rw) 
+  		.d_rw(bus.rw) 
   		);
 
 endmodule : top_duv
@@ -513,7 +513,7 @@ Interfaz interfaz(.reloj(CLK),.rst(RESET));
 top_duv duv (.bus(interfaz));
             
 //program  
-estimulos estim1 (.testar(interfaz),.monitorizar(interfaz));  
+estimulos estim1 (.testar(interfaz),.monitor(interfaz));  
 
 // CLK
 always
