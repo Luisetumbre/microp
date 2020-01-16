@@ -60,6 +60,16 @@ clocking monit @(posedge reloj);
   modport monitor (clocking monit);
 
   //hacer modport para el dut!
+  modport duv (
+  	input reloj,
+  	input rst,
+  	input idata,
+  	input ddata_r,
+  	output ddadr,
+  	output iaddr,
+  	output ddata_w,
+  	output rw
+  	);
 
   
 endinterface
