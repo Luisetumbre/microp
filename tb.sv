@@ -486,18 +486,8 @@ begin
 	randsInst.funct_3_B.constraint_mode(0);
 	$display("Probamos instruccion R");
 	assert (randsInst.randomize()) else    $fatal("Fallo en la aleatorizacion");
-	
+
 end
-
-
-
-  //constraint op_code_I {inst_i[6:0] dist {7'b0010011:=6, 7'b0000011:=1};}; 
-  //constraint funct_7{inst_r[31:25] dist{7'h0:=6, 7'h20:=2};};
-  //constraint funct_3_S{inst_s[14:12] == 3'b010;};
-  //constraint funct_3_B{inst_b[14:12] < 3'b10;};
-  //constraint op_code_R {inst_r[6:0]==7'b0110011;};
-  //constraint op_code_S {inst_s[6:0]==7'b0100011;};
-  //constraint op_code_B {inst_b[6:0]==7'b1100011;};
 
 
 endprogram
