@@ -1,0 +1,15 @@
+vlog -reportprogress 300 -work work -cover sbcet3 {tb.sv}
+vlog -reportprogress 300 -work work {tb.sv}
+vsim -L cycloneive_ver -L altera_ver -L altera_mf_ver -coverage -novopt work.tb
+
+add wave \
+{sim:/tb/CLK} \
+{sim:/tb/RESET} \
+{sim:/tb/duv/bus/idata} \
+{sim:/tb/duv/bus/ddata_r} \
+{sim:/tb/duv/bus/iaddr} \
+{sim:/tb/duv/bus/ddadr} \
+{sim:/tb/duv/bus/ddata_w} \
+{sim:/tb/duv/bus/rw} 
+
+run 12000 ns
