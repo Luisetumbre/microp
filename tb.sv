@@ -1,14 +1,14 @@
 class Rands;
   parameter N=32;
-  randc logic [N-1:0] inst
+  randc logic [N-1:0] inst;
   
-  constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};}; 
-  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=2};};
-  constraint funct_3_S{inst[14:12] == 3'b010;};
-  constraint funct_3_B{inst[14:12] < 3'b10;};
-  constraint op_code_R {inst[6:0]==7'b0110011;};
-  constraint op_code_S {inst[6:0]==7'b0100011;};
-  constraint op_code_B {inst[6:0]==7'b1100011;};
+  constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};} 
+  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};}
+  constraint funct_3_S{inst[14:12] == 3'b010;}
+  constraint funct_3_B{inst[14:12] < 3'b10;}
+  constraint op_code_R {inst[6:0]==7'b0110011;}
+  constraint op_code_S {inst[6:0]==7'b0100011;}
+  constraint op_code_B {inst[6:0]==7'b1100011;}
 endclass
 
 `timescale 1ns/1ps
@@ -351,20 +351,20 @@ input [31:0] instruccion;
 	$display("rs1=%d",rs1);
 	$display("rs2=%d",rs2);
 	endtask: newInst
-  //Compares the Actual result with the expected result
-  task main;
-  
-    transaction trans;
-    forever begin
-      mb.get(trans);
-        if((trans.a+trans.b) == trans.c)
-          $display("Result is as Expected");
-        else
-          $error("Wrong Result.\n\tExpeced: %0d Actual: %0d",(trans.a+trans.b),trans.c);
-        no_transactions++;
-      trans.display("[ Scoreboard ]");
-    end
-  endtask
+//  //Compares the Actual result with the expected result
+//  task main;
+//  
+//    transaction trans;
+//    forever begin
+//      mb.get(trans);
+//        if((trans.a+trans.b) == trans.c)
+//          $display("Result is as Expected");
+//        else
+//          $error("Wrong Result.\n\tExpeced: %0d Actual: %0d",(trans.a+trans.b),trans.c);
+//        no_transactions++;
+//      trans.display("[ Scoreboard ]");
+//    end
+//  endtask
   
   task verRegistro;
   input [4:0] r;
@@ -430,11 +430,10 @@ covergroup Icover;
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	destino: coverpoint monitor.monit.idata[11:7];
-  	inmediatos:coverpoint {monitor.monit.idata[31:20]}{
-  	bins positivo = {1:8191};
-  	bins negativo = {8192:16383};
-  	}
-
+  	//inmediatos:coverpoint {monitor.monit.idata[31:20]}{
+  	//bins positivo = {1:8191};
+  	//bins negativo = {8192:16383};
+//}
 endgroup
 
 covergroup Scover;
@@ -446,10 +445,10 @@ covergroup Scover;
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	fuente2: coverpoint monitor.monit.idata[24:20];
-  	inmediatos:coverpoint {monitor.monit.idata[31:25],monitor.monit.idata[11,7]}{
-  	bins positivo = {1:8191};
-  	bins negativo = {8192:16383};
-  	}
+  	//inmediatos:coverpoint {monitor.monit.idata[31:25],monitor.monit.idata[11,7]}{
+  	//bins positivo = {1:8191};
+  	//bins negativo = {8192:16383};
+  	//}
 
 endgroup
 
@@ -464,13 +463,13 @@ covergroup Bcover;  //Definicion del covergroup
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
  	fuente2: coverpoint monitor.monit.idata[24:20];
- 	inmediatos:coverpoint {monitor.monit.idata[31],monitor.monit.idata[7],monitor.monit.idata[30:25],monitor.monit.idata[11,8]}{
-  	bins positivo = {1:8191};
-  	bins negativo = {8192:16383};
-  	}
+ 	//inmediatos:coverpoint {monitor.monit.idata[31],monitor.monit.idata[7],monitor.monit.idata[30:25],monitor.monit.idata[11,8]}{
+  	//bins positivo = {1:8191};
+  	//bins negativo = {8192:16383};
+  	//}
 endgroup; 
 
-//Declaración Scoreboard
+//Declaracion Scoreboard
 Scoreboard sb;
 //Declaracion aleatorios
 Rands randsInst;
