@@ -6,6 +6,7 @@ class Rands;
   constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};}
   constraint funct_3_S{inst[14:12] == 3'b010;}
   constraint funct_3_B{inst[14:12] < 3'b10;}
+  constraint funct_3_RI{inst[14:12] != 3'b001; inst[14:12] != 3'b101;}
   constraint op_code_R {inst[6:0]==7'b0110011;}
   constraint op_code_S {inst[6:0]==7'b0100011;}
   constraint op_code_B {inst[6:0]==7'b1100011;}
@@ -86,6 +87,7 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	reg [N-1:0] target, salida_obtenida;
 	reg [4:0] rd;
 	reg [11:0] imm;
+	reg [4:0] rs1;
 	
 	virtual Interfaz.monit puertos;
 	
@@ -96,6 +98,35 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
   end
   endfunction
    
+	task modoI;
+	input [31:0] instruccion;
+	string nombre;
+	nombre = mnemonico(instruccion);
+	case (nombre)
+	"addi":
+	begin
+	rs1 = getRs1(instruccion);
+	imm = getImm(instruccion, getInstType(instruccion));
+	end
+	//"slti":
+	//"sltiu":
+	"xori":
+	begin
+	rs1 = getRs1(instruccion);
+	imm = getImm(instruccion, getInstType(instruccion));
+	end
+	"ori":
+	begin
+	rs1 = getRs1(instruccion);
+	imm = getImm(instruccion, getInstType(instruccion));
+	rd = getRd(instruccion);
+	end
+	//"andi":
+	//default:
+	
+	endcase
+	endtask
+	
 	
 	function bit [6:0] getOpcode;
   input [31:0] instruction;
@@ -402,7 +433,7 @@ endclass : Scoreboard
 
 
 program estimulos
-	(Interfaz.dut_p testar,
+	(Interfaz.tb_p testar,
 	Interfaz.monitor monitor
 	);
 
@@ -478,27 +509,48 @@ Rcover rcov;
 Icover icov;
 Scover scov;
 Bcover bcov;
-
+string nombre;
 
 initial
 begin
 	randsInst = new; //creamos el objeto de los aleatorios
 	sb = new(monitor); //creamos el scoreboard
 	rcov = new; //creamos el covergroup de las instrucciones R
-	while (rcov.get_coverage()<100)
-	randsInst.op_code_R.constraint_mode(1);
-	randsInst.funct_7.constraint_mode(1);
-	randsInst.op_code_I.constraint_mode(0);
+	
+	//rellenar el banco de registros
+	duv.DUT.Register.reg_file[1] = 32'h3;
+	duv.DUT.Register.reg_file[24] = 32'h9;
+	duv.DUT.Register.reg_file[3] = 32'h8;
+	duv.DUT.Register.reg_file[6] = 32'h7;
+	duv.DUT.Register.reg_file[21] = 32'h30;
+	
+	// while (rcov.get_coverage()<100)
+	randsInst.op_code_R.constraint_mode(0);
+	randsInst.funct_7.constraint_mode(0);
+	randsInst.op_code_I.constraint_mode(1);
+	randsInst.funct_3_RI.constraint_mode(1);
 	randsInst.op_code_S.constraint_mode(0);
 	randsInst.op_code_B.constraint_mode(0);
 	randsInst.funct_3_S.constraint_mode(0);
 	randsInst.funct_3_B.constraint_mode(0);
-	$display("Probamos instruccion R");
-	assert (randsInst.randomize()) else    $fatal("Fallo en la aleatorizacion");
+	$display("Probamos instruccion I");
+	repeat (5) 
+	begin
+	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
 	$display("IDATA:%h",randsInst.inst);
-	testar.cb_dut.idata <= randsInst.inst;
+	nombre = sb.mnemonico(randsInst.inst);
+	sb.modoI(randsInst.inst);
+	$display("Rs1 es %d",sb.rs1);
+	sb.target = duv.DUT.Register.reg_file[sb.rs1];
+	$display("Target:%d",sb.target);
+	testar.cb_tb.idata <= randsInst.inst;
+	//@(testar.dut_p)
+	
+	end
 	rcov.sample();
-	@(testar.cb_dut);
+	//$display("Rs1 segunda vez %d",
+	@(testar.cb_tb);
+	$display("RD result: %d",duv.DUT.Register.reg_file[6]);
 end
 
 
@@ -530,7 +582,7 @@ endmodule : top_duv
 
 ////////////////////////////////////////////////////////////////////////
 
-module singlecycle_tb();                                         
+module tb();                                         
 // general purpose registers
 reg CLK;
 reg RESET;
@@ -555,13 +607,12 @@ end
 // RESET
 initial
 begin
-  RESET=1'b1;
-  # 1  RESET=1'b0;
-  #99 RESET = 1'b1;
+  RESET=1'b0;
+  # 3 RESET = 1'b1;
 end 
   
 initial begin
   $dumpfile("singlecycle_test.vcd");
-  $dumpvars(0,singlecycle_tb);  
+  $dumpvars(0,tb);  
 end  
 endmodule
