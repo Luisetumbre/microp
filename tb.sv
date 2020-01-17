@@ -496,7 +496,10 @@ begin
 	randsInst.funct_3_B.constraint_mode(0);
 	$display("Probamos instruccion R");
 	assert (randsInst.randomize()) else    $fatal("Fallo en la aleatorizacion");
-
+	$display("IDATA:%h",randsInst.inst);
+	testar.cb_dut.idata <= randsInst.inst;
+	rcov.sample();
+	@(testar.cb_dut);
 end
 
 
