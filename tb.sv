@@ -3,10 +3,11 @@ class Rands;
   randc logic [N-1:0] inst;
   
   constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};} 
+  constraint lwcase {inst[6:0]==3 -> inst[14:12]=2;}
   constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};}
   constraint funct_3_S{inst[14:12] == 3'b010;}
   constraint funct_3_B{inst[14:12] < 3'b10;}
-  constraint funct_3_RI{inst[14:12] != 3'b001; inst[14:12] != 3'b101;}
+  constraint funct_3_RI{soft inst[14:12] != 3'b001; soft inst[14:12] != 3'b101;}
   constraint op_code_R {inst[6:0]==7'b0110011;}
   constraint op_code_S {inst[6:0]==7'b0100011;}
   constraint op_code_B {inst[6:0]==7'b1100011;}
@@ -529,6 +530,7 @@ begin
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(1);
 	randsInst.funct_3_RI.constraint_mode(1);
+	randsInst.lwcase.constraint_mode(1);
 	randsInst.op_code_S.constraint_mode(0);
 	randsInst.op_code_B.constraint_mode(0);
 	randsInst.funct_3_S.constraint_mode(0);
