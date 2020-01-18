@@ -112,12 +112,12 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 		"slti":
 		begin
 			if(aux1<imm) target=1'b1;
-			else target 1'b0;
+			else target = 1'b0;
 		end
 		"sltiu":
 		begin
 			if(aux1<imm) target=1'b1;
-			else target 1'b0;
+			else target = 1'b0;
 		end
 		"xori":
 			target = aux1 ^ imm;
@@ -125,7 +125,9 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 			target = aux1 | imm;
 		"andi":
 			target = aux1 & imm;
-		default:
+		"lw":
+			target = aux1 + imm;
+		//default:
 	endcase
 	
 	endtask
@@ -154,7 +156,7 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 			target = aux1 | aux2;
 		"and":
 			target = aux1 & aux2;
-		default:
+		//default:
 	endcase
 	
 	endtask
@@ -537,37 +539,39 @@ begin
 	randsInst.inst[14:12]=3'b010;
 
 	$display("IDATA:%h",randsInst.inst);
-	//nombre = sb.mnemonico(randsInst.inst);
-	sb.setGlobals(randsInst);
-	//sb.modoI(randsInst.inst);
+	sb.setGlobals(randsInst.inst);
 	testar.cb_tb.idata <= randsInst.inst;
 	@(testar.cb_tb);
 	sb.result <= monitor.monit.ddadr;
-	$display("Target: %d",sb.result);
-	modoI(randsInst.inst);
-	checkResult();
+	@(testar.cb_tb);
+	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
+	$display ("Aux1%h", sb.aux1);
+	sb.modoI(randsInst.inst);
+	$display("Result: %h Target: %h",sb.result, sb.target);
+	//$display("Target: %h", sb.target);
+	sb.checkResult();
 	icov.sample();
 	end
 	
-	rcov = new();
-	$display ("Probamos instrucciones R");
-	//while (rcov.get_coverage()<90) begin
-	repeat (20) begin
-	randsInst.op_code_R.constraint_mode(1);
-	randsInst.funct_7.constraint_mode(1);
-	randsInst.op_code_I.constraint_mode(0);
-	randsInst.funct_3_RI.constraint_mode(1);
-	randsInst.op_code_S.constraint_mode(0);
-	randsInst.op_code_B.constraint_mode(0);
-	randsInst.funct_3_S.constraint_mode(0);
-	randsInst.funct_3_B.constraint_mode(0);
-	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
-	$display("IDATA:%h",randsInst.inst);
-	testar.cb_tb.idata <= randsInst.inst;
-	sb.target <= monitor.monit.ddadr;
-	@(testar.cb_tb);
-	rcov.sample();
-	end
+//	rcov = new();
+//	$display ("Probamos instrucciones R");
+//	//while (rcov.get_coverage()<90) begin
+//	repeat (20) begin
+//	randsInst.op_code_R.constraint_mode(1);
+//	randsInst.funct_7.constraint_mode(1);
+//	randsInst.op_code_I.constraint_mode(0);
+//	randsInst.funct_3_RI.constraint_mode(1);
+//	randsInst.op_code_S.constraint_mode(0);
+//	randsInst.op_code_B.constraint_mode(0);
+//	randsInst.funct_3_S.constraint_mode(0);
+//	randsInst.funct_3_B.constraint_mode(0);
+//	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
+//	$display("IDATA:%h",randsInst.inst);
+//	testar.cb_tb.idata <= randsInst.inst;
+//	sb.target <= monitor.monit.ddadr;
+//	@(testar.cb_tb);
+//	rcov.sample();
+//	end
 	@(testar.cb_tb);
 end
 
