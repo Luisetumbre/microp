@@ -110,6 +110,7 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	begin
 	rs1 = getRs1(instruccion);
 	imm = getImm(instruccion, getInstType(instruccion));
+	aux1 = duv.DUT.Register.reg_file[rs1];
 	end
 	//"slti":
 	//"sltiu":
