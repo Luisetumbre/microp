@@ -87,10 +87,11 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
   parameter N=32;
   //used to count the number of transactions
 	int no_transactions;
-	reg [N-1:0] target, pre_target, aux1, aux2;
+	reg [N-1:0] target, result, aux1, aux2;
 	reg [4:0] rd;
 	reg [11:0] imm;
 	reg [4:0] rs1, rs2;
+	reg [31:0] pc;
 	
 	virtual Interfaz.monit puertos;
 	
@@ -191,6 +192,34 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	
 	task checkResult;
 	assert (target == result) else $info("No concuerda el resultado del micro con el correcto");
+	endtask
+
+	task setGlobals;
+		input [31:0] instruction;
+		case(getInstType(instruction))
+			2'b00: //R
+			begin
+				rs1=getRs1(instruction);
+				rs2=getRs2(instruction);
+			end
+			2'b01: //I
+			begin
+				rs1=getRs1(instruction);
+				imm=getImm(instruction,getInstType(instruction));
+			end
+			2'b10: //S
+			begin
+				rs1=getRs1(instruction);
+				rs2=getRs2(instruction);
+				imm=getImm(instruction,getInstType(instruction));
+			end
+			2'b11: //B
+			begin
+				rs1=getRs1(instruction);
+				rs2=getRs2(instruction);
+				imm=getImm(instruction,getInstType(instruction));
+			end
+		endcase
 	endtask
 	
 	
@@ -369,105 +398,6 @@ input [31:0] instruccion;
 	end
 	$display("Instruccion:%d",mnemonico);
 	endfunction: mnemonico
-	
-	
-	task newInst;
-	input [31:0] instruction;
-	reg [4:0] rs1, rs2;
-	string mnem;
-	mnem = mnemonico(instruction);
-	rs1 = getRs1(instruction);
-	case (mnem)
-	//R-format
-	"add":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"sub":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"slt":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"sltu":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"xor":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"or":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	"and":
-	begin
-	rs2 = getRs2(instruction);
-	rd = getRd(instruction);
-	end
-	//I-format
-	"addi":
-	begin
-	imm = getImm(instruction, getInstType(instruction));
-	rd = getRd(instruction);
-	end
-	"slti":
-	begin
-	imm = getImm(instruction, getInstType(instruction));
-	rd = getRd(instruction);
-	end
-	"sltiu":
-	begin
-	imm = getImm(instruction, getInstType(instruction));
-	rd = getRd(instruction);
-	end
-	"xori":
-	imm = getImm(instruction, getInstType(instruction));
-	"ori":
-	imm = getImm(instruction, getInstType(instruction));
-	"andi":
-	imm = getImm(instruction, getInstType(instruction));
-	//"lw": //???????????????????????????????
-
-	//S-format
-	"sw":
-	rs1 = getRs1(instruction);
-	
-	//SB-format
-	endcase
-	$display("rd=%d",rd);
-	$display("rs1=%d",rs1);
-	$display("rs2=%d",rs2);
-	endtask: newInst
-//  //Compares the Actual result with the expected result
-//  task main;
-//  
-//    transaction trans;
-//    forever begin
-//      mb.get(trans);
-//        if((trans.a+trans.b) == trans.c)
-//          $display("Result is as Expected");
-//        else
-//          $error("Wrong Result.\n\tExpeced: %0d Actual: %0d",(trans.a+trans.b),trans.c);
-//        no_transactions++;
-//      trans.display("[ Scoreboard ]");
-//    end
-//  endtask
-  
-  task verRegistro;
-  input [4:0] r;
-  output [31:0] data;
-  
-  endtask: verRegistro
 
 endclass : Scoreboard
 
@@ -590,6 +520,8 @@ begin
 	duv.DUT.Register.reg_file[6] = 32'h7;
 	duv.DUT.Register.reg_file[21] = 32'h30;
 	
+	@(testar.cb_tb);
+	$display("Probamos instrucciones I");
 	while (icov.get_coverage()<90) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
@@ -599,18 +531,21 @@ begin
 	randsInst.op_code_B.constraint_mode(0);
 	randsInst.funct_3_S.constraint_mode(0);
 	randsInst.funct_3_B.constraint_mode(0);
-	$display("Probamos instrucciones I");
+	
 	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
 	if (randsInst.inst[6:0]==7'h3)
 	randsInst.inst[14:12]=3'b010;
+
 	$display("IDATA:%h",randsInst.inst);
-	nombre = sb.mnemonico(randsInst.inst);
-	sb.modoI(randsInst.inst);
+	//nombre = sb.mnemonico(randsInst.inst);
+	sb.setGlobals(randsInst);
+	//sb.modoI(randsInst.inst);
 	testar.cb_tb.idata <= randsInst.inst;
 	@(testar.cb_tb);
-	sb.target <= monitor.monit.ddadr;
-	$display("Target: %d",sb.target);
-	@(testar.cb_tb);
+	sb.result <= monitor.monit.ddadr;
+	$display("Target: %d",sb.result);
+	modoI(randsInst.inst);
+	checkResult();
 	icov.sample();
 	end
 	
