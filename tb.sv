@@ -3,14 +3,16 @@ class Rands;
   randc logic [N-1:0] inst;
   
   constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};} 
-  constraint lwcase {inst[6:0]==3 -> inst[14:12]=2;}
-  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};}
-  constraint funct_3_S{inst[14:12] == 3'b010;}
-  constraint funct_3_B{inst[14:12] < 3'b10;}
-  constraint funct_3_RI{soft inst[14:12] != 3'b001; soft inst[14:12] != 3'b101;}
   constraint op_code_R {inst[6:0]==7'b0110011;}
   constraint op_code_S {inst[6:0]==7'b0100011;}
   constraint op_code_B {inst[6:0]==7'b1100011;}
+ 
+  constraint funct_3_RI{soft inst[14:12] != 3'b001; soft inst[14:12] != 3'b101;}
+  constraint funct_3_S{inst[14:12] == 3'b010;}
+  constraint funct_3_B{inst[14:12] < 3'b10;}
+  
+  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};}
+  
 endclass
 
 `timescale 1ns/1ps
@@ -85,10 +87,10 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
   parameter N=32;
   //used to count the number of transactions
 	int no_transactions;
-	reg [N-1:0] target, salida_obtenida;
+	reg [N-1:0] target, pre_target, aux1, aux2;
 	reg [4:0] rd;
 	reg [11:0] imm;
-	reg [4:0] rs1;
+	reg [4:0] rs1, rs2;
 	
 	virtual Interfaz.monit puertos;
 	
@@ -227,7 +229,7 @@ input [31:0] instruccion;
 		2'b11:
 		format = "SB-format";
 	endcase
-	$display("formato = %d",format);
+	//$display("formato = %d",format);
 	funct3 = getFunct3(instruccion);
 	//Ahora nos separamos por formatos
 	//R-format
@@ -252,7 +254,7 @@ input [31:0] instruccion;
 		10'h007:
 		mnemonico = "and";
 		default:
-		mnemonico = "unknown";
+		mnemonico = "unknown or not implemented";
 		endcase
 	end
 	
@@ -275,7 +277,7 @@ input [31:0] instruccion;
 		10'h103:
 		mnemonico = "lw";
 		default:
-		mnemonico = "unknown";
+		mnemonico = "unknown or not implemented";
 		endcase
 	end
 	
@@ -286,7 +288,7 @@ input [31:0] instruccion;
 		10'h123:
 		mnemonico = "sw";
 		default:
-		mnemonico = "unknown";
+		mnemonico = "unknown or not implemented";
 		endcase
 	end
 	
@@ -299,7 +301,7 @@ input [31:0] instruccion;
 		10'h0E3:
 		mnemonico = "bne";
 		default:
-		mnemonico = "unknown";
+		mnemonico = "unknown or not implemented";
 		endcase
 	end
 	$display("Instruccion:%d",mnemonico);
@@ -439,29 +441,29 @@ program estimulos
 	);
 
 covergroup Rcover;
-	AluOP:coverpoint monitor.monit.idata[6:0] {
+	AluOP:coverpoint testar.cb_tb.idata[6:0] {
 	bins OpR = {51};//7'h33
 	}
-	fun7:coverpoint monitor.monit.idata[31:25]{
+	fun7:coverpoint testar.cb_tb.idata[31:25]{
 	bins funct7[2] = {0,32}; //2 bins, b[0]=0 and b[1]=32
   	}
-  	fun3:coverpoint  monitor.monit.idata[14:12]{
+  	fun3:coverpoint  testar.cb_tb.idata[14:12]{
   	bins funct3 [8] = {[0:7]};
  	}
- 	fuente1: coverpoint monitor.monit.idata[19:15];
-  	fuente2: coverpoint monitor.monit.idata[24:20];
-  	destino: coverpoint monitor.monit.idata[11:7];
+ 	fuente1: coverpoint testar.cb_tb.idata[19:15];
+  	fuente2: coverpoint testar.cb_tb.idata[24:20];
+  	destino: coverpoint testar.cb_tb.idata[11:7];
 endgroup
 
 covergroup Icover;
-	AluOp:coverpoint monitor.monit.idata[6:0]{
+	AluOp:coverpoint testar.cb_tb.idata[6:0]{
 	bins OpI [2]= {3,19}; //2 bins, b[0]=3 and b[1]=19
 	}
-	fun3:coverpoint  monitor.monit.idata[14:12]{
+	fun3:coverpoint  testar.cb_tb.idata[14:12]{
   	bins funct3 [8] = {[0:7]};
  	}
- 	fuente1: coverpoint monitor.monit.idata[19:15];
-  	destino: coverpoint monitor.monit.idata[11:7];
+ 	fuente1: coverpoint testar.cb_tb.idata[19:15];
+  	destino: coverpoint testar.cb_tb.idata[11:7];
   	//inmediatos:coverpoint {monitor.monit.idata[31:20]}{
   	//bins positivo = {1:8191};
   	//bins negativo = {8192:16383};
@@ -516,7 +518,7 @@ initial
 begin
 	randsInst = new; //creamos el objeto de los aleatorios
 	sb = new(monitor); //creamos el scoreboard
-	rcov = new; //creamos el covergroup de las instrucciones R
+	icov = new; //creamos el covergroup de las instrucciones R
 	
 	//rellenar el banco de registros
 	duv.DUT.Register.reg_file[1] = 32'h3;
@@ -530,29 +532,28 @@ begin
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(1);
 	randsInst.funct_3_RI.constraint_mode(1);
-	randsInst.lwcase.constraint_mode(1);
 	randsInst.op_code_S.constraint_mode(0);
 	randsInst.op_code_B.constraint_mode(0);
 	randsInst.funct_3_S.constraint_mode(0);
 	randsInst.funct_3_B.constraint_mode(0);
-	$display("Probamos instruccion I");
-	repeat (5) 
+	$display("Probamos instrucciones I");
+	repeat (50) 
 	begin
 	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
+	if (randsInst.inst[6:0]==7'h3)
+	randsInst.inst[14:12]=3'b010;
 	$display("IDATA:%h",randsInst.inst);
 	nombre = sb.mnemonico(randsInst.inst);
 	sb.modoI(randsInst.inst);
 	$display("Rs1 es %d",sb.rs1);
-	sb.target = duv.DUT.Register.reg_file[sb.rs1];
-	$display("Target:%d",sb.target);
+	//sb.target = duv.DUT.Register.reg_file[sb.rs1];
+	//$display("Target:%d",sb.target);
 	testar.cb_tb.idata <= randsInst.inst;
-	//@(testar.dut_p)
+	@(testar.cb_tb);
+	icov.sample();
 	
 	end
-	rcov.sample();
-	//$display("Rs1 segunda vez %d",
 	@(testar.cb_tb);
-	$display("RD result: %d",duv.DUT.Register.reg_file[6]);
 end
 
 
