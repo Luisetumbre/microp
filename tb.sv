@@ -106,29 +106,91 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	string nombre;
 	nombre = mnemonico(instruccion);
 	case (nombre)
-	"addi":
-	begin
-	rs1 = getRs1(instruccion);
-	imm = getImm(instruccion, getInstType(instruccion));
-	aux1 = duv.DUT.Register.reg_file[rs1];
-	end
-	//"slti":
-	//"sltiu":
-	"xori":
-	begin
-	rs1 = getRs1(instruccion);
-	imm = getImm(instruccion, getInstType(instruccion));
-	end
-	"ori":
-	begin
-	rs1 = getRs1(instruccion);
-	imm = getImm(instruccion, getInstType(instruccion));
-	rd = getRd(instruccion);
-	end
-	//"andi":
-	//default:
-	
+		"addi":
+			target = aux1 + imm;
+		"slti":
+		begin
+			if(aux1<imm) target=1'b1;
+			else target 1'b0;
+		end
+		"sltiu":
+		begin
+			if(aux1<imm) target=1'b1;
+			else target 1'b0;
+		end
+		"xori":
+			target = aux1 ^ imm;
+		"ori":
+			target = aux1 | imm;
+		"andi":
+			target = aux1 & imm;
+		default:
 	endcase
+	
+	endtask
+	
+	
+	task modoR;
+	input [31:0] instruccion;
+	string nombre;
+	nombre = mnemonico(instruccion);
+	case (nombre)
+		"add":
+			target = aux1 & aux2;
+		"sub":
+			target = aux1 - aux2;
+		"slt":
+			if(aux1<rs2) target=1'b1;
+			else target = 1'b0;
+		"sltu":
+		begin
+			if(aux1<rs2) target=1'b1;
+			else target = 1'b0;
+		end
+		"xor":
+			target = aux1 ^ aux2;
+		"or":
+			target = aux1 | aux2;
+		"and":
+			target = aux1 & aux2;
+		default:
+	endcase
+	
+	endtask
+	
+	
+	task modoS;
+	input [31:0] instruccion;
+	string nombre;
+	nombre = mnemonico(instruccion);
+	case (nombre)
+		"beq":
+		begin
+			if (aux1 == aux2)
+			pc = pc + {imm,1'b0};
+			else 
+			pc = pc;
+	end
+		"bne":
+		begin
+			if (aux1 != aux2)
+			pc = pc + {imm,1'b0};
+			else 
+			pc = pc;
+		end
+	endcase // nombre
+	endtask
+	
+	
+//	task modoSB;
+//	input [31:0] instruccion;
+//	string nombre;
+//	nombre = mnemonico(instruccion); //sólo está Sw
+//	mem [aux1 + imm] = aux2
+	
+	
+	task checkResult;
+	assert (target == result) else $info("No concuerda el resultado del micro con el correcto");
 	endtask
 	
 	
@@ -528,7 +590,7 @@ begin
 	duv.DUT.Register.reg_file[6] = 32'h7;
 	duv.DUT.Register.reg_file[21] = 32'h30;
 	
-	// while (rcov.get_coverage()<100)
+	while (icov.get_coverage()<90) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(1);
@@ -538,25 +600,41 @@ begin
 	randsInst.funct_3_S.constraint_mode(0);
 	randsInst.funct_3_B.constraint_mode(0);
 	$display("Probamos instrucciones I");
-	repeat (50) 
-	begin
 	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
 	if (randsInst.inst[6:0]==7'h3)
 	randsInst.inst[14:12]=3'b010;
 	$display("IDATA:%h",randsInst.inst);
 	nombre = sb.mnemonico(randsInst.inst);
 	sb.modoI(randsInst.inst);
-	$display("Rs1 es %d",sb.rs1);
-	//sb.target = duv.DUT.Register.reg_file[sb.rs1];
-	//$display("Target:%d",sb.target);
 	testar.cb_tb.idata <= randsInst.inst;
 	@(testar.cb_tb);
+	sb.target <= monitor.monit.ddadr;
+	$display("Target: %d",sb.target);
+	@(testar.cb_tb);
 	icov.sample();
+	end
 	
+	rcov = new();
+	$display ("Probamos instrucciones R");
+	//while (rcov.get_coverage()<90) begin
+	repeat (20) begin
+	randsInst.op_code_R.constraint_mode(1);
+	randsInst.funct_7.constraint_mode(1);
+	randsInst.op_code_I.constraint_mode(0);
+	randsInst.funct_3_RI.constraint_mode(1);
+	randsInst.op_code_S.constraint_mode(0);
+	randsInst.op_code_B.constraint_mode(0);
+	randsInst.funct_3_S.constraint_mode(0);
+	randsInst.funct_3_B.constraint_mode(0);
+	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
+	$display("IDATA:%h",randsInst.inst);
+	testar.cb_tb.idata <= randsInst.inst;
+	sb.target <= monitor.monit.ddadr;
+	@(testar.cb_tb);
+	rcov.sample();
 	end
 	@(testar.cb_tb);
 end
-
 
 endprogram
 
