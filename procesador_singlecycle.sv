@@ -84,10 +84,10 @@ assign w_B=ALUSrc ? Imm : w_Readdata2; //Multiplexor 2 a 1
 assign w_Writedata=w_MemtoReg? ddata_r : w_ALU_result; //Multiplexor 2 a 1
 
 assign branch_zero=w_Branch & w_zero; //Variable de seleccion para mux al salida sumador
-assign Imm_desplazado={Imm[30:0],Imm[31]};
+//assign Imm_desplazado={Imm[30:0],Imm[31]};
 
 assign ddata_w=w_Readdata2; //Bus de datos de escritura	 
-assign salida_sumador_instrucciones=Imm_desplazado+PC;
+assign salida_sumador_instrucciones=Imm+PC;
 
 assign PC_in=branch_zero?salida_sumador_instrucciones:(PC+4); //MULTIPLEXOR
 assign daddr=w_ALU_result; //Bus de direcciones de datos
