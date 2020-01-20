@@ -2,8 +2,6 @@
 TODO: Microprocesador RISC V
 ## Installation
 TODO: Para descargar el proyecto: `git clone https://github.com/Luisetumbre/microp`
-## Usage
-TODO: Write usage instructions
 ## Contributing
 1. Fork it!
 2. Create your feature branch: `git checkout -b my-new-feature`
