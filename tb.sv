@@ -92,7 +92,7 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	reg [N-1:0] aux1, aux2, targetR, resultR;
 	reg [9:0] target, result;
 	reg [4:0] rd;
-	reg [11:0] imm;
+	reg [31:0] imm;
 	reg [4:0] rs1, rs2;
 	reg [9:0] pc;
 	
@@ -119,6 +119,17 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 		end
 		"sltiu":
 		begin
+			$display("Rs1: %h Imm: %h",getRs1(instruccion),getImm(instruccion,getInstType(instruccion)));
+			if (aux1[31] == 1'b1) //si aux1 es negativo le hacemos el complemento a 2 mas 1 (cambiar de signo)
+			begin
+			aux1[31:0] = (~aux1[31:0]+1'b1);
+			$display("aux1 sin signo: %h",aux1);
+			end
+			if (imm[31] == 1'b1) //si aux1 es negativo le hacemos el complemento a 2 mas 1 (cambiar de signo)
+			begin
+			imm[31:0] = (~imm[31:0]+1'b1);
+			$display("imm sin signo: %h",imm);
+			end
 			if(aux1<imm) target=1'b1;
 			else target = 1'b0;
 		end
@@ -142,15 +153,25 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	nombre = mnemonico(instruccion);
 	case (nombre)
 		"add":
-			targetR = aux1 & aux2;
+			targetR = aux1 + aux2;
 		"sub":
 			targetR = aux1 - aux2;
 		"slt":
-			if(aux1<rs2) targetR=1'b1;
+			if(aux1<aux2) targetR=1'b1;
 			else targetR = 1'b0;
 		"sltu":
 		begin
-			if(aux1<rs2) target=1'b1;
+		if (aux1[31] == 1'b1) //si aux1 es negativo le hacemos el complemento a 2 mas 1 (cambiar de signo)
+		begin
+			aux1[31:0] = (~aux1[31:0]+1'b1);
+			$display("aux1 sin signo: %h",aux1);
+			end
+		if (aux2[31] == 1'b1) //si aux1 es negativo le hacemos el complemento a 2 mas 1 (cambiar de signo)
+		begin
+			aux2[31:0] = (~aux2[31:0]+1'b1);
+			$display("aux2 sin signo: %h",aux2);
+			end
+		if(aux1<aux2) targetR=1'b1;
 			else targetR = 1'b0;
 		end
 		"xor":
@@ -260,17 +281,20 @@ function bit [6:0] getFunct7;
   getFunct7 = instruction [31:25];
 endfunction : getFunct7
 
-function bit [11:0] getImm;
+function bit [31:0] getImm;
   input [31:0] instruction;
   input [1:0] inst_type;
   case (inst_type)
   //R-format No hay inmediato
   2'b01: //I-format
-  getImm = instruction [31:20];
+  begin
+  getImm = {{20{instruction[31]}},instruction [31:20]};
+  $display("Inmediato extendido: %h",getImm);
+  end
   2'b10: //S-format
-  getImm = {instruction[31:25], instruction[11:7]};
+  getImm = {{20{instruction[31]}},instruction[31:25], instruction[11:7]};
   2'b11: //SB-format
-  getImm = {instruction[31], instruction[7], instruction[30:25], instruction[11:8]};
+  getImm = {{20{instruction[31]}},instruction[31], instruction[7], instruction[30:25], instruction[11:8]};
   default:
   getImm = 0;
   endcase
@@ -466,7 +490,7 @@ covergroup Scover;
 	bins OpS = {35}; //7'h23
 	}
 	fun3:coverpoint  monitor.monit.idata[14:12]{
-  	bins funct3 [8] = {[0:7]};
+  	bins funct3 = {2};
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	fuente2: coverpoint monitor.monit.idata[24:20];
@@ -585,8 +609,7 @@ begin
 
 	scov=new();
 	$display ("Probamos instrucciones S"); //Solo la Sw
-	//while (scov.get_coverage()<90) begin
-	repeat (10) begin
+	while (scov.get_coverage()<70) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(0);
@@ -613,9 +636,8 @@ begin
 	end
 
 	bcov=new();
-	$display ("Probamos instrucciones S"); //Solo la Sw
-	//while (scov.get_coverage()<90) begin
-	repeat (10) begin
+	$display ("Probamos instrucciones SB"); //Solo la Sw
+	while (bcov.get_coverage()<80) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(0);
