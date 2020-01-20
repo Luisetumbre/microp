@@ -1,5 +1,5 @@
 # microp
-TODO: Write a project description
+TODO: Microprocesador RISC V
 ## Installation
 TODO: Para descargar el proyecto: `git clone https://github.com/Luisetumbre/microp`
 ## Usage
@@ -20,7 +20,7 @@ TODO: Write usage instructions
 6. Actualizar archivos `git pull`
 
 ## History
-TODO: Write history
+TODO: La segmentación no ha salido exitosamente
 ## Credits
 TODO: Agradecimientos al David Muñoz
 ## License
