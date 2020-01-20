@@ -3,7 +3,7 @@ class Rands;
   randc logic [N-1:0] inst;
   randc logic [N-1:0] ddata;
   
-  constraint op_code_I {inst[6:0] dist {7'b0010011:=6, 7'b0000011:=1};} 
+  constraint op_code_I {inst[6:0] dist {7'b0010011:=7, 7'b0000011:=1};} 
   constraint op_code_R {inst[6:0]==7'b0110011;}
   constraint op_code_S {inst[6:0]==7'b0100011;}
   constraint op_code_B {inst[6:0]==7'b1100011;}
@@ -12,7 +12,7 @@ class Rands;
   constraint funct_3_S{inst[14:12] == 3'b010;}
   constraint funct_3_B{inst[14:12] < 3'b10;}
   
-  constraint funct_7{inst[31:25] dist{7'h0:=6, 7'h20:=1};} 
+  constraint funct_7{inst[31:25] dist{7'h0:=7, 7'h20:=1};} 
   
 endclass
 
@@ -89,12 +89,12 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
   parameter N=32;
   //used to count the number of transactions
 	int no_transactions;
-	reg [N-1:0] aux1, aux2;
+	reg [N-1:0] aux1, aux2, targetR, resultR;
 	reg [9:0] target, result;
 	reg [4:0] rd;
 	reg [11:0] imm;
 	reg [4:0] rs1, rs2;
-	reg [31:0] pc;
+	reg [9:0] pc;
 	
 	virtual Interfaz.monit puertos;
 	
@@ -142,30 +142,30 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	nombre = mnemonico(instruccion);
 	case (nombre)
 		"add":
-			target = aux1 & aux2;
+			targetR = aux1 & aux2;
 		"sub":
-			target = aux1 - aux2;
+			targetR = aux1 - aux2;
 		"slt":
-			if(aux1<rs2) target=1'b1;
-			else target = 1'b0;
+			if(aux1<rs2) targetR=1'b1;
+			else targetR = 1'b0;
 		"sltu":
 		begin
 			if(aux1<rs2) target=1'b1;
-			else target = 1'b0;
+			else targetR = 1'b0;
 		end
 		"xor":
-			target = aux1 ^ aux2;
+			targetR = aux1 ^ aux2;
 		"or":
-			target = aux1 | aux2;
+			targetR = aux1 | aux2;
 		"and":
-			target = aux1 & aux2;
+			targetR = aux1 & aux2;
 		//default:
 	endcase
 	
 	endtask
 	
 	
-	task modoS;
+	task modoB;
 	input [31:0] instruccion;
 	string nombre;
 	nombre = mnemonico(instruccion);
@@ -173,31 +173,48 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 		"beq":
 		begin
 			if (aux1 == aux2)
-			pc = pc + {imm,1'b0};
+			target = pc + imm;
 			else 
-			pc = pc;
+			target = pc;
 	end
 		"bne":
 		begin
 			if (aux1 != aux2)
-			pc = pc + {imm,1'b0};
+			target = pc + imm;
 			else 
-			pc = pc;
+			target = pc;
 		end
 	endcase // nombre
 	endtask
 	
 	
-//	task modoSB;
-//	input [31:0] instruccion;
-//	string nombre;
-//	nombre = mnemonico(instruccion); //sólo está Sw
-//	mem [aux1 + imm] = aux2
+	task modoS;
+	input [31:0] instruccion;
+	string nombre;
+	nombre = mnemonico(instruccion);
+	case(nombre)
+	"sw":
+	begin
+		target = aux1 + imm;
+		targetR = aux2;
+	end
+	endcase
+	endtask
 	
 	
 	task checkResult;
 	assert (target == result) else $info("No concuerda el resultado del micro con el correcto");
 	endtask
+
+	task checkResultR;
+	assert (targetR == resultR) else $info("No concuerda el resultado del micro con el correcto");
+	endtask
+
+	task checkResultS;
+	assert (targetR == resultR && target == result) else $info("No concuerda el resultado del micro con el correcto");
+	endtask
+
+
 
 	task setGlobals;
 		input [31:0] instruction;
@@ -406,30 +423,6 @@ input [31:0] instruccion;
 
 endclass : Scoreboard
 
-////probamos la funcion
-//reg [31:0] instruccion = 32'h01DF0F33;
-//reg [6:0] opcode;
-//reg [1:0] tipoInstruccion;
-//reg [9:0] group;
-//reg [6:0] funct7;
-//reg [2:0] funct3;
-//string format;
-//string nombre;
-//
-//initial 
-//	begin
-//		opcode = getOpcode(instruccion);
-//		$display("OpCode =%b",opcode);
-//		tipoInstruccion = getInstType(opcode);
-//		nombre = mnemonico(instruccion);
-//		newInst(instruccion);
-//	end
-
-
-
-
-/////////////////////////////////////////////
-
 
 
 
@@ -560,8 +553,7 @@ begin
 
 	rcov = new();
 	$display ("Probamos instrucciones R");
-	//while (rcov.get_coverage()<90) begin
-	repeat (40) begin
+	while (rcov.get_coverage()<80) begin
 	randsInst.op_code_R.constraint_mode(1);
 	randsInst.funct_7.constraint_mode(1);
 	randsInst.op_code_I.constraint_mode(0);
@@ -578,14 +570,14 @@ begin
 	sb.setGlobals(randsInst.inst);  //actualizamos variables
 	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
 	@(testar.cb_tb);
-	sb.target <= monitor.monit.ddadr; //leemos el resultado
+	sb.resultR <= duv.DUT.ALU.ALU_result; //leemos el resultado
 	@(testar.cb_tb);
 	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
 	sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
 	$display ("Aux1:%h Aux2:%h", sb.aux1, sb.aux2);
 	sb.modoR(randsInst.inst);
-	$display("Result: %h Target: %h",sb.result, sb.target);
-	sb.checkResult(); //comprobamos si concuerdan result y target
+	$display("Result: %h Target: %h",sb.resultR, sb.targetR);
+	sb.checkResultR(); //comprobamos si concuerdan result y target
 	rcov.sample(); //sample de los bins
 	end
 
@@ -594,7 +586,7 @@ begin
 	scov=new();
 	$display ("Probamos instrucciones S"); //Solo la Sw
 	//while (scov.get_coverage()<90) begin
-	repeat (5) begin
+	repeat (10) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(0);
@@ -605,20 +597,49 @@ begin
 	randsInst.funct_3_B.constraint_mode(0);
 	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
 	$display("IDATA:%h",randsInst.inst);
-	//sb.setGlobals(randsInst.inst);  //actualizamos variables
-	//testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
-	//@(testar.cb_tb);
-	//sb.target <= monitor.monit.ddadr; //leemos el resultado
-	//@(testar.cb_tb);
-	//sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
-	//sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
-	//display ("Aux1:%h Aux2:%h", sb.aux1, sb.aux2);
-	//sb.modoS(randsInst.inst);
-	//$display("Result: %h Target: %h",sb.result, sb.target);
-	//sb.checkResult(); //comprobamos si concuerdan result y target
-	//scov.sample(); //sample de los bins
+	sb.setGlobals(randsInst.inst);  //actualizamos variables
+	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
+	@(testar.cb_tb);
+	sb.result <= monitor.monit.ddadr; //leemos el resultado
+	sb.resultR <= monitor.monit.ddata_w;
+	@(testar.cb_tb);
+	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
+	sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
+	$display ("Aux1:%h Aux2:%h", sb.aux1, sb.aux2);
+	sb.modoS(randsInst.inst);
+	$display("Result: %h Target: %h ResultR: %h TargetR: %h",sb.result, sb.target, sb.resultR, sb.targetR);
+	sb.checkResultS(); //comprobamos si concuerdan result y target
+	scov.sample(); //sample de los bins
 	end
 
+	bcov=new();
+	$display ("Probamos instrucciones S"); //Solo la Sw
+	//while (scov.get_coverage()<90) begin
+	repeat (10) begin
+	randsInst.op_code_R.constraint_mode(0);
+	randsInst.funct_7.constraint_mode(0);
+	randsInst.op_code_I.constraint_mode(0);
+	randsInst.funct_3_RI.constraint_mode(0);
+	randsInst.op_code_S.constraint_mode(0);
+	randsInst.op_code_B.constraint_mode(1);
+	randsInst.funct_3_S.constraint_mode(0);
+	randsInst.funct_3_B.constraint_mode(1);
+	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
+	$display("IDATA:%h",randsInst.inst);
+	sb.setGlobals(randsInst.inst);  //actualizamos variables
+	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
+	@(testar.cb_tb);
+	sb.result <= monitor.monit.iaddr; //leemos el resultado
+	@(testar.cb_tb);
+	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
+	sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
+	sb.pc = duv.DUT.PC;
+	$display ("Aux1:%h Aux2:%h PC: %h", sb.aux1, sb.aux2, sb.pc);
+	sb.modoS(randsInst.inst);
+	$display("Result: %h Target: %h",sb.result, sb.target);
+	sb.checkResult(); //comprobamos si concuerdan result y target
+	bcov.sample(); //sample de los bins
+	end
 
 	@(testar.cb_tb);
 end
