@@ -25,11 +25,11 @@ interface Interfaz (
   input  bit        reloj  , 
   input   bit      rst);
   logic [31:0] idata, ddata_r, ddata_w;
-	logic [9:0] iaddr, ddadr;
+  logic [9:0] iaddr, ddadr;
   logic rw;
 
 clocking cb_dut @(posedge reloj);
-  default input #1ns output #1ns;
+  default input #0ns output #0ns;
     input idata;
     input ddata_r;
     output iaddr;
@@ -39,7 +39,7 @@ clocking cb_dut @(posedge reloj);
   endclocking
 
 clocking cb_tb @(posedge reloj);
-  default input #1ns output #1ns;
+  default input #0ns output #0ns;
     output idata;
     output ddata_r;
     input iaddr;
@@ -49,7 +49,7 @@ clocking cb_tb @(posedge reloj);
   endclocking
   
 clocking monit @(posedge reloj);
-  default input #1ns output #1ns;
+  default input #0ns output #0ns;
     input idata;
     input ddata_r;
     input iaddr;
