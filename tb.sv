@@ -3,7 +3,7 @@ class Rands;
   randc logic [N-1:0] inst;
   randc logic [N-1:0] ddata;
   
-  constraint op_code_I {inst[6:0] dist {7'b0010011:=7, 7'b0000011:=1};} 
+  constraint op_code_I {inst[6:0] dist {7'b0010011:=7, 7'b0000011:=1};} //distribucion de probabilidad por pesos para intentar hacerlas equiprobables
   constraint op_code_R {inst[6:0]==7'b0110011;}
   constraint op_code_S {inst[6:0]==7'b0100011;}
   constraint op_code_B {inst[6:0]==7'b1100011;}
@@ -19,7 +19,7 @@ endclass
 `timescale 1ns/1ps
 
 /////////INTERFAZ///////////
-//señales:
+//senyales:
 //CLK,RESET_N,idata,ddata_r,iaddr,daddr,ddata_w,d_rw
 interface Interfaz (
   input  bit        reloj  , 
@@ -29,7 +29,7 @@ interface Interfaz (
   logic rw;
 
 clocking cb_dut @(posedge reloj);
-  default input #0ns output #0ns;
+  default input #1ns output #1ns;
     input idata;
     input ddata_r;
     output iaddr;
@@ -39,7 +39,7 @@ clocking cb_dut @(posedge reloj);
   endclocking
 
 clocking cb_tb @(posedge reloj);
-  default input #0ns output #0ns;
+  default input #1ns output #1ns;
     output idata;
     output ddata_r;
     input iaddr;
@@ -49,7 +49,7 @@ clocking cb_tb @(posedge reloj);
   endclocking
   
 clocking monit @(posedge reloj);
-  default input #0ns output #0ns;
+  default input #1ns output #1ns;
     input idata;
     input ddata_r;
     input iaddr;
@@ -65,7 +65,6 @@ clocking monit @(posedge reloj);
   //monitor 
   modport monitor (clocking monit);
 
-  //hacer modport para el dut!
   modport duv (
   	input reloj,
   	input rst,
@@ -83,23 +82,19 @@ endinterface
 
 ////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////
-
-class Scoreboard; //Scoreboard receive's the sampled packet from monitor
+class Scoreboard;
   parameter N=32;
-  //used to count the number of transactions
-	int no_transactions;
 	reg [N-1:0] aux1, aux2, targetR, resultR;
 	reg [9:0] target, result;
 	reg [4:0] rd;
 	reg [31:0] imm;
 	reg [4:0] rs1, rs2;
-	reg [9:0] pc;
+	reg [31:0] pc;
 	
 	virtual Interfaz.monit puertos;
 	
   //constructor
-  function new(virtual Interfaz.monit ports); //como es el constructor?, instanciando interfaz y monitor?
+  function new(virtual Interfaz.monit ports);
   begin
   this.puertos = ports;
   end
@@ -194,16 +189,16 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 		"beq":
 		begin
 			if (aux1 == aux2)
-			target = pc + imm;
+			targetR = pc + imm + imm; //sumamos 2 veces imm porque al usar dos ciclos de reloj, salta 2 veces
 			else 
-			target = pc;
+			targetR =  pc + 4;
 	end
 		"bne":
 		begin
 			if (aux1 != aux2)
-			target = pc + imm;
+			targetR = pc + imm + imm; //sumamos 2 veces imm porque al usar dos ciclos de reloj, salta 2 veces
 			else 
-			target = pc;
+			targetR = pc + 4;
 		end
 	endcase // nombre
 	endtask
@@ -235,6 +230,9 @@ class Scoreboard; //Scoreboard receive's the sampled packet from monitor
 	assert (targetR == resultR && target == result) else $info("No concuerda el resultado del micro con el correcto");
 	endtask
 
+	task checkResultB;
+	assert (targetR == resultR) else $info("No concuerda el resultado del micro con el correcto");
+	endtask
 
 
 	task setGlobals;
@@ -317,7 +315,7 @@ endfunction : getRd
 
 function bit [1:0] getInstType;
   input [6:0] opCode; //entra opCode
-  case (opCode)
+  case (opCode)  //hay algunas para otro tipo de instrucciones no implementadas finalmente
   //R-format
   7'b0110011:
   getInstType = 2'b00;
@@ -460,10 +458,10 @@ covergroup Rcover;
 	bins OpR = {51};//7'h33
 	}
 	fun7:coverpoint testar.cb_tb.idata[31:25]{
-	bins funct7[2] = {0,32}; //2 bins, b[0]=0 and b[1]=32
+	bins funct7[2] = {0,32};
   	}
   	fun3:coverpoint  testar.cb_tb.idata[14:12]{
-  	bins funct3 [8] = {[0:7]};
+  	bins funct3 [6] = {0,2,3,4,6,7}; 
  	}
  	fuente1: coverpoint testar.cb_tb.idata[19:15];
   	fuente2: coverpoint testar.cb_tb.idata[24:20];
@@ -472,13 +470,14 @@ endgroup
 
 covergroup Icover;
 	AluOp:coverpoint testar.cb_tb.idata[6:0]{
-	bins OpI [2]= {3,19}; //2 bins, b[0]=3 and b[1]=19
+	bins OpI [2]= {3,19};
 	}
 	fun3:coverpoint  testar.cb_tb.idata[14:12]{
-  	bins funct3 [8] = {[0:7]};
+  	bins funct3 [6] = {0,2,3,4,6,7};
  	}
  	fuente1: coverpoint testar.cb_tb.idata[19:15];
   	destino: coverpoint testar.cb_tb.idata[11:7];
+	pos_neg: coverpoint testar.cb_tb.idata[31]; //2 bins implicitos, 1 si hay negativos y 0 si hay positivos
   	//inmediatos:coverpoint {monitor.monit.idata[31:20]}{
   	//bins positivo = {1:8191};
   	//bins negativo = {8192:16383};
@@ -494,6 +493,7 @@ covergroup Scover;
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
   	fuente2: coverpoint monitor.monit.idata[24:20];
+	pos_neg: coverpoint testar.cb_tb.idata[31];
   	//inmediatos:coverpoint {monitor.monit.idata[31:25],monitor.monit.idata[11,7]}{
   	//bins positivo = {1:8191};
   	//bins negativo = {8192:16383};
@@ -508,15 +508,20 @@ covergroup Bcover;  //Definicion del covergroup
   	}
  	fun3:coverpoint  monitor.monit.idata[14:12]
   	{
- 	bins funct3 [8] = {[0:7]};
+ 	bins funct3 [2] = {0,1};
  	}
  	fuente1: coverpoint monitor.monit.idata[19:15];
  	fuente2: coverpoint monitor.monit.idata[24:20];
+	pos_neg: coverpoint testar.cb_tb.idata[31];
  	//inmediatos:coverpoint {monitor.monit.idata[31],monitor.monit.idata[7],monitor.monit.idata[30:25],monitor.monit.idata[11,8]}{
   	//bins positivo = {1:8191};
   	//bins negativo = {8192:16383};
   	//}
+	
 endgroup; 
+
+//no hacemos los cross porque entonces tendria que comprobar
+//todas las instrucciones posibles y tardaria demasiado tiempo
 
 //Declaracion Scoreboard
 Scoreboard sb;
@@ -557,14 +562,16 @@ begin
 	assert (randsInst.randomize()) else    $info("Fallo en la aleatorizacion");
 	if (randsInst.inst[6:0]==7'h3)
 	randsInst.inst[14:12]=3'b010;
-
+	
 	$display("IDATA:%h",randsInst.inst);
 	sb.setGlobals(randsInst.inst); //actualizamos variables
+	
 	testar.cb_tb.ddata_r <= randsInst.ddata;
 	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
 	@(testar.cb_tb);
 	sb.result <= monitor.monit.ddadr;
 	@(testar.cb_tb);
+	sb.modoI(randsInst.inst);
 	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
 	$display ("Aux1%h", sb.aux1);
 	sb.modoI(randsInst.inst);
@@ -577,7 +584,7 @@ begin
 
 	rcov = new();
 	$display ("Probamos instrucciones R");
-	while (rcov.get_coverage()<80) begin
+	while (rcov.get_coverage()<90) begin
 	randsInst.op_code_R.constraint_mode(1);
 	randsInst.funct_7.constraint_mode(1);
 	randsInst.op_code_I.constraint_mode(0);
@@ -593,9 +600,11 @@ begin
 	$display("IDATA:%h",randsInst.inst);
 	sb.setGlobals(randsInst.inst);  //actualizamos variables
 	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
+	
 	@(testar.cb_tb);
 	sb.resultR <= duv.DUT.ALU.ALU_result; //leemos el resultado
 	@(testar.cb_tb);
+	
 	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
 	sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
 	$display ("Aux1:%h Aux2:%h", sb.aux1, sb.aux2);
@@ -609,7 +618,7 @@ begin
 
 	scov=new();
 	$display ("Probamos instrucciones S"); //Solo la Sw
-	while (scov.get_coverage()<70) begin
+	while (scov.get_coverage()<90) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(0);
@@ -635,9 +644,10 @@ begin
 	scov.sample(); //sample de los bins
 	end
 
+	@(testar.cb_tb);
 	bcov=new();
 	$display ("Probamos instrucciones SB"); //Solo la Sw
-	while (bcov.get_coverage()<80) begin
+	while (bcov.get_coverage()<90) begin
 	randsInst.op_code_R.constraint_mode(0);
 	randsInst.funct_7.constraint_mode(0);
 	randsInst.op_code_I.constraint_mode(0);
@@ -651,15 +661,17 @@ begin
 	sb.setGlobals(randsInst.inst);  //actualizamos variables
 	testar.cb_tb.idata <= randsInst.inst; //introducimos la instruccion
 	@(testar.cb_tb);
-	sb.result <= monitor.monit.iaddr; //leemos el resultado
+	 //leemos el resultado
+	 sb.pc = duv.DUT.PC;
 	@(testar.cb_tb);
+	sb.resultR = duv.DUT.PC;
 	sb.aux1 = duv.DUT.Register.reg_file[sb.rs1];
 	sb.aux2 = duv.DUT.Register.reg_file[sb.rs2];
-	sb.pc = duv.DUT.PC;
+	
 	$display ("Aux1:%h Aux2:%h PC: %h", sb.aux1, sb.aux2, sb.pc);
-	sb.modoS(randsInst.inst);
-	$display("Result: %h Target: %h",sb.result, sb.target);
-	sb.checkResult(); //comprobamos si concuerdan result y target
+	sb.modoB(randsInst.inst);
+	$display("Result: %h Target: %h",sb.resultR, sb.targetR);
+	sb.checkResultB(); //comprobamos si concuerdan result y target
 	bcov.sample(); //sample de los bins
 	end
 
