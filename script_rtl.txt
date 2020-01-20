@@ -12,4 +12,4 @@ add wave \
 {sim:/tb/duv/bus/ddata_w} \
 {sim:/tb/duv/bus/rw} 
 
-run 12000 ns
+run 120000 ns
